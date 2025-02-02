@@ -1,0 +1,367 @@
+CREATE SCHEMA iceberg.dis WITH (location = 's3a://minio:9000/warehouse/dis/');
+
+
+CREATE SCHEMA iceberg.dis WITH (location = 's3a://warehouse/dis');
+
+
+curl -X POST http://localhost:8181/v1/catalogs/iceberg -H "Content-Type: application/json" -d '{
+  "type": "rest",
+  "uri": "http://iceberg-rest:8181",
+  "warehouse": "s3a://warehouse/",
+  "io-impl": "org.apache.iceberg.aws.s3.S3FileIO",
+  "s3.endpoint": "http://minio:9000",
+  "s3.access-key": "minioadmin",
+  "s3.secret-key": "minioadmin",
+  "s3.path-style-access": true
+}'
+
+
+docker exec -it hive-metastore /bin/bash
+
+
+
+
+Secret Key
+
+1ssrhhWC7YFcUkBHOXSS7wHRBmIFOTRMyi9rX3R8
+
+
+1ssrhhWC7YFcUkBHOXSS7wHRBmIFOTRMyi9rX3R8
+
+
+Access Key
+
+Iw3goQmsyZXB2iNEMNie
+
+
+Iw3goQmsyZXB2iNEMNie
+
+
+curl -v http://localhost:8181/v1/config
+
+curl -v -u minioadmin:minioadmin http://localhost:8181/v1/catalogs
+
+
+curl -X POST http://localhost:8181/v1/catalogs/iceberg -H "Content-Type: application/json" -d '{"type": "rest","uri": "http://iceberg-rest:8181","warehouse": "s3a://warehouse/","io-impl": "org.apache.iceberg.aws.s3.S3FileIO","s3.endpoint": "http://minio:9000","s3.access-key": "minioadmin","s3.secret-key": "minioadmin","s3.path-style-access": true}'
+
+
+
+curl -X POST http://localhost:8181/v1/catalogs/iceberg -H "Content-Type: application/json" -d '{"type": "rest","uri": "http://iceberg-rest:8181","warehouse": "s3://warehouse/","io-impl": "org.apache.iceberg.aws.s3.S3FileIO","s3.endpoint": "http://minio:9000","s3.access-key": "minioadmin","s3.secret-key": "minioadmin","s3.path-style-access": true}'
+  
+
+  -d '{
+  "type": "rest",
+  "uri": "http://iceberg-rest:8181",
+  "warehouse": "s3://warehouse/",
+  "io-impl": "org.apache.iceberg.aws.s3.S3FileIO",
+  "s3.endpoint": "http://minio:9000",
+  "s3.access-key": "minioadmin",
+  "s3.secret-key": "minioadmin",
+  "s3.path-style-access": true
+}'
+
+dbeaver location 
+
+cd "C:\Users\Sambit Baliarsingh\AppData\Roaming\DBeaverData\drivers"
+
+https://github.com/dbeaver/dbeaver/issues/20704#issuecomment-1700730969
+
+There is a dbeaver.ini file in DBeaver root directory. Modify it by adding these three parameters in the end of the text document:
+
+-Dswt.enable.autoScale=true
+-Dswt.autoScale=200
+-Dswt.autoScale.method=nearest
+
+Restart or start DBeaver after you save the changes. You may vary the size of the icons by changing the Dswt.autoScale parameter. It has the value in percent, thus 200 stands for x2 enlargement.
+
+
+2025-01-22:
+
+AirRoutes:
+StartCity,EndCity,Airlines,StartTime,FlightDuration
+Hyd,Blore,AirIndia,8AM,1
+Blore,Chennai,AirIndia,9AM,0.5hrs
+NULL,NULL,Jet,10am,2hr
+
+
+Qn: Cities whose number of departures is not same as landings
+
+with temp_dep as (
+select StartCity as  StartCity , count(1) as dep_count from AirRoutes
+group by StartCity)
+,
+temp_landing
+(
+  select endCity as endCity , count(*) as ArrivalCount from AirRoutes
+  group by EndCity
+)
+select case when "xyz" then NULL 
+            else (coalsec(d.StartCity, l.endCity))  
+            end as city
+from temp_dep d
+full outer join
+temp_landing l
+on (coalsec (d.StartCity,"xyz")=coalsec(l.endCity,"xyz"))
+where nvl(dep_count,0) <> nvl(ArrivalCount,0) 
+or  d.StartCity is NULL or l.endCity is NULL  ;
+
+CITYNAME:
+city1
+city2
+city3
+NULL
+
+
+
+Hyd,Blore,AirIndia,8AM,1
+Blore,Chennai,AirIndia,9AM,0.5hrs
+Chennai,Hyd,AirIndia,9AM,0.5hrs
+
+Chennai,Null,AirIndia,9AM,0.5hrs
+Null,BLR,AirIndia,9AM,0.5hrs
+
+Hyd 1 dep , 1 Arrival
+Blore 1 Dep , 1 arrivel
+Chennai 1 dep , 1 arrival 
+
+Q2: CityName,AirlinesName,DeparturesCnt,ArrivalsCnt
+
+Hyd,Blore,AirIndia,8AM,1
+Hyd,Chennai,AirIndia,8AM,1
+Hyd,Mumabi,Jet,8AM,1
+Blore,Chennai,Jet,9AM,0.5hrs
+Chennai,Hyd,AirIndia,9AM,0.5hrs
+Chennai,Blore,Indigo,9AM,0.5hrs
+Chennai,Warangal,Indigo,9AM,0.5hrs
+Chennai,Tirupati,Indigo,9AM,0.5hrs
+
+
+Sample output 
+CityName,AirlinesName,DeparturesCnt,ArrivalsCnt
+Hyd ,AirIndia ,2,1
+Blore ,Jet , 1 ,0
+Chennai,Indigo,4,0
+
+Ans : 
+
+With Deparature as (
+select StartCity as CityName , Airlines 
+count(1) as departurecount from AirRoutes
+group by StartCity ,Airlines
+
+# hyd , AirIndia , 2
+# hyd , Jet, 1 
+),
+Arrivals
+(
+  Select EndCity as CityName , Airlines,
+  Count(1) as ArrivalCount
+  from AirRoutes
+  group by EndCity, Airlines
+
+  # hyd , AirIndia , 1
+)
+with combined_date as (
+Select coalsec(d.CityName,a.CityName) as CityName,
+       coalsec(d.Airlines,a.Airlines) as Airlines,
+        (nvl(d.departurecount,0)) as DeparturesCnt,
+       (nvl (a.ArrivalCount,0)) as ArrivalCount,
+from Deparature d outer join Arrivals a
+on (d.CityName=a.CityName and d.Airlines=a.Airlines) 
+
+# hyd , AirIndia , 2
+# hyd , Jet, 1 
+# hyd , AirIndia , 1
+)
+select CityName ,
+       Airlines ,
+       max (DeparturesCnt), 
+       max (ArrivalCount)
+(
+select CityName , Airlines , sum (DeparturesCnt) DeparturesCnt,
+sum (ArrivalCount) ArrivalCount from 
+combined_date
+# hyd , AirIndia , 3,0
+# hyd , Jet, 1 ,,0
+)
+group by CityName ,Airlines 
+
+# hyd , AirIndia , 3,0
+;
+
+# Hyd, 
+
+--------------------
+
+
+You are tasked with designing a system that integrates data from diverse sources: S3 (object storage), Redshift (columnar database), and RDS (relational database). How would you architect a solution to efficiently
+
+ query and build a selection criteria from these sources? What frameworks, tools, and optimization techniques would you employ, considering scalability and latency?
+
+Size of the data : Sclable , E-commercr data
+layer 
+
+talking data bases
+
+
+
+Design a real-time analytics system to calculate the number of purchases for specific products (e.g., jerseys or caps) on an e-commerce platform like Fanatics.  Consider scalability, consistency, and strategies for reducing latency to provide actionable insights to the business team.
+
+
+
+In a distributed database system with multiple replicas, how would you ensure data consistency while maintaining low latency? Discuss the trade-offs between consistency models like eventual consistency, strong consistency, and causal consistency.
+
+db--cache()  ----> read from the cache  
+db -------------->
+
+db (read replica) --> p cache()--> 
+                      s cache()
+db (p, s )
+
+----------------
+
+
+# def say_hello():
+#     print('Hello, World')
+
+# for i in range(5):
+#     say_hello()
+
+
+# Your previous Plain Text content is preserved below:
+
+# This is just a simple shared plaintext pad, with no execution capabilities.
+
+# When you know what language you'd like to use for your interview,
+# simply choose it from the dots menu on the tab, or add a new language
+# tab using the Languages button on the left.
+
+# You can also change the default language your pads are created with
+# in your account settings: https://app.coderpad.io/settings
+
+# Enjoy your interview!
+
+
+
+# a list of element
+
+# find topk frequency
+
+# arr= [10,5,20,8,12,15,30]
+
+# top = 3 
+
+# [30,20,15]
+
+# [1,2,2,3,4]
+
+
+from collections import Counter
+import heapq 
+
+def top_k_freq(arr, top):
+    #   if top<= 0:
+    #     return []
+    #   # count the frquency
+    #   freq_map= Counter(arr)
+    #   return heapq.nlargest(top, freq_map.keys(), key = freq_map.get())
+    if top>= len(arr):
+        return None
+    freq_map= Counter(arr)
+    sorted_item=sorted(freq_map.items(),key=lambda x:x[1], reverse=True)  # o(N log n) O(N)
+    return[item[0] for item in sorted_item[:top]]
+
+arr= [1,2,2,3,4]
+top= 2
+
+return_val= top_k_freq (arr, top)
+print("The top- >{0} val-> {1}".format(top,return_val))
+
+# Time O (N Log n)
+# Space O(N)
+
+
+arr= [5,5,5,2,4,6]
+top= 10
+return_val= top_k_freq (arr, top)
+
+print("The top- >{0} val-> {1}".format(top,return_val))
+
+# String of inte
+## stream of integer
+
+# 222334433242332
+
+# def top_k_freq(top):
+
+
+# def sink(i)
+
+# procesing_number(50)--1233455
+# sink(1)
+
+
+# output 
+# procesing_number(50)
+# procesing_number(50)
+# top_k_freq(1) : 50
+# procesing_number(100)
+# procesing_number(100)
+# procesing_number(100)
+# top_k_freq(1) : [100]
+# top_k_freq(2) : [100, 50]
+
+# top_k_freq(1) : 50
+
+#ccctop_k_freq(1) = 1
+
+class NumberOfStreams:
+    def __init__(self):
+        self.numbers=[]
+        self.frequency=Counter()
+
+    def procesing_number(self, num:int):
+        self.frequency[num] +=1
+    
+    def top_k_frequency(self,k):
+        top_k= [num for num, _ in self.frequency.most_common(k)]
+        print("Top k frequecny -->{}".format(top_k))
+        return top_k
+        
+
+
+n=NumberOfStreams()
+n.procesing_number(50)
+n.top_k_frequency(1)
+
+n.procesing_number(100)
+n.procesing_number(100)
+n.procesing_number(100)
+n.top_k_frequency(2)
+
+key , Value  (100,)
+
+redis (Key,  value)
+
+[]
+
+zadd -->set values countter 
+ , counter 
+
+ zcount
+
+ url counter--> 
+
+
+ redis , dynamo db 
+
+ url click --->  click stream generator --->
+ kafka ---> prthon program ---> (redis or dynamo db )-->
+ (sliding widow )--- configurable  time window , top 5, 10 , 
+ 24 hours top 10 , 
+ 30 min top 10 
+ 1 hour 10
+
+ ----
+ dynamic agg--->
+ click house ->> take report 
