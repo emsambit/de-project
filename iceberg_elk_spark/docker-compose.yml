@@ -78,11 +78,11 @@ services:
       - ./data:/home/data
     command: |
       -c "sleep 2"
-#       /bin/bash -c "sleep 2 && 
-#       aws s3 mb s3://warehouse --endpoint-url http://minio:9000 || exit 0"
-#      /bin/bash -c "sleep 5 && \
-#      aws --endpoint-url http://minio:9000 s3 mb s3://warehouse --region us-east-1 && \
-#      aws --endpoint-url http://minio:9000 s3 cp /home/data s3://warehouse/raw --recursive"
+      /bin/bash -c "sleep 2 && 
+      aws s3 mb s3://warehouse --endpoint-url http://minio:9000 || exit 0"
+      /bin/bash -c "sleep 5 && \
+      aws --endpoint-url http://minio:9000 s3 mb s3://warehouse --region us-east-1 && \
+      aws --endpoint-url http://minio:9000 s3 cp /home/data s3://warehouse/raw --recursive"
     entrypoint: [/bin/bash]
     environment: 
       AWS_ACCESS_KEY_ID: "minioadmin"
@@ -175,49 +175,59 @@ services:
       # SPARK_MASTER_URL: spark://spark:7077
     # volumes:
       # - spark_data:/opt/spark/work-dir
+      
+        # SPARK_DEFAULTS: |
+        # spark.sql.extensions=org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions
+        # spark.sql.catalog.iceberg=org.apache.iceberg.spark.SparkCatalog
+        # spark.sql.catalog.iceberg.catalog-impl=org.apache.iceberg.rest.RESTCatalog
+        # spark.sql.catalog.iceberg.uri=http://iceberg-rest:8181
+        # spark.sql.catalog.iceberg.io-impl=org.apache.iceberg.aws.s3.S3FileIO
+        # spark.sql.catalog.iceberg.warehouse=s3://warehouse/wh/
+        # spark.sql.catalog.iceberg.s3.endpoint=http://minio:9000
+        # spark.sql.catalog.iceberg.s3.path-style-access=true
+        # spark.jars.packages=org.apache.iceberg:iceberg-spark-runtime-3.3_2.12:1.5.0    
+        # spark.sql.extensions                    org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions
+        # spark.sql.catalog.iceberg               org.apache.iceberg.spark.SparkCatalog
+        # spark.sql.catalog.iceberg.catalog-impl  org.apache.iceberg.rest.RESTCatalog
+        # spark.sql.catalog.iceberg.uri           http://iceberg-rest:8181
+        # spark.sql.catalog.iceberg.io-impl       org.apache.iceberg.aws.s3.S3FileIO
+        # spark.sql.catalog.iceberg.warehouse     s3://warehouse/wh/
+        # spark.sql.catalog.iceberg.s3.endpoint   http://minio:9000
+        # spark.sql.catalog.iceberg.s3.path-style-access  true
+        # spark.sql.defaultCatalog                iceberg
+        # spark.sql.catalogImplementation         in-memory
+        # spark.eventLog.enabled                  true
+        # spark.eventLog.dir                      /home/iceberg/spark-events
+        # spark.history.fs.logDirectory           /home/iceberg/spark-events
+        # spark.jars.packages                     org.apache.hadoop:hadoop-aws:3.2.0,org.apache.iceberg:iceberg-spark-runtime-3.3_2.12:1.3.0
+        # spark.hadoop.fs.s3a.access.key          minioadmin
+        # spark.hadoop.fs.s3a.secret.key          minioadmin
+        # spark.hadoop.fs.s3a.endpoint            http://minio:9000
+        # spark.hadoop.fs.s3a.path.style.access   true
+        # spark.executor.extraJavaOptions         -Dcom.amazonaws.services.s3.enableV4=true
+        # spark.driver.extraJavaOptions           -Dcom.amazonaws.services.s3.enableV4=true
     
-  spark:
-    image: tabulario/spark-iceberg
-    container_name: spark-iceberg
-    build: spark/
-    networks:
-      iceberg_net:
-    depends_on:
-      - iceberg-rest
-      - minio
-    volumes:
-      - ./warehouse:/home/iceberg/warehouse
-      - ./notebooks:/home/iceberg/notebooks/notebooks
-    environment:
-      AWS_ACCESS_KEY_ID: minioadmin
-      AWS_SECRET_ACCESS_KEY: minioadmin
-      AWS_REGION: us-east-1
-      SPARK_DEFAULTS: |
-        spark.sql.extensions                    org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions
-        spark.sql.catalog.iceberg               org.apache.iceberg.spark.SparkCatalog
-        spark.sql.catalog.iceberg.catalog-impl  org.apache.iceberg.rest.RESTCatalog
-        spark.sql.catalog.iceberg.uri           http://rest:8181
-        spark.sql.catalog.iceberg.io-impl       org.apache.iceberg.aws.s3.S3FileIO
-        spark.sql.catalog.iceberg.warehouse     s3://warehouse/wh/
-        spark.sql.catalog.iceberg.s3.endpoint   http://minio:9000
-        spark.sql.catalog.iceberg.s3.path-style-access  true
-        spark.sql.defaultCatalog                iceberg
-        spark.sql.catalogImplementation         in-memory
-        spark.eventLog.enabled                  true
-        spark.eventLog.dir                      /home/iceberg/spark-events
-        spark.history.fs.logDirectory           /home/iceberg/spark-events
-        spark.jars.packages                     org.apache.hadoop:hadoop-aws:3.2.0
-        spark.hadoop.fs.s3a.access.key          minioadmin
-        spark.hadoop.fs.s3a.secret.key          minioadmin
-        spark.hadoop.fs.s3a.endpoint            http://minio:9000
-        spark.hadoop.fs.s3a.path.style.access   true
-        spark.executor.extraJavaOptions         -Dcom.amazonaws.services.s3.enableV4=true
-        spark.driver.extraJavaOptions           -Dcom.amazonaws.services.s3.enableV4=true
-    ports:
-      - 9999:9999
-      - 9090:9090
-      - 10000:10000
-      - 10001:10001
+  # spark:
+    # image: tabulario/spark-iceberg
+    # container_name: spark-iceberg
+    # build: spark/
+    # networks:
+      # iceberg_net:
+    # depends_on:
+      # - iceberg-rest
+      # - minio
+    # volumes:
+      # - ./warehouse:/home/iceberg/warehouse
+      # - ./notebooks:/home/iceberg/notebooks/notebooks
+    # environment:
+      # AWS_ACCESS_KEY_ID: minioadmin
+      # AWS_SECRET_ACCESS_KEY: minioadmin
+      # AWS_REGION: us-east-1
+    # ports:
+      # - 9999:9999
+      # - 9090:8081
+      # - 10000:10000
+      # - 10001:10001
       
   glue:
     container_name: glue_jupyter
@@ -240,6 +250,8 @@ services:
     restart: always
     volumes:
       - ./notebooks:/home/glue_user/workspace/jupyter_workspace/
+    networks:
+      - iceberg_net
 
   iceberg-rest:
     image: tabulario/iceberg-rest:latest
