@@ -1,40 +1,45 @@
+Here’s the updated README file with the requested changes:
+
+---
+
 # Data Lake and Analytics Stack with Docker Compose
 
-This repository sets up a complete **data lake and analytics environment** using Docker Compose. It integrates multiple services like **Kafka**, **Trino**, **Spark**, **MinIO**, **Hive**, **Elasticsearch**, **Kibana**, and **Glue Jupyter Notebooks** for seamless data ingestion, querying, and analytics.
+This repository sets up a complete **data lake and analytics environment** using Docker Compose. It integrates multiple services like **Kafka**, **Trino**, **Spark**, **MinIO**, **Elasticsearch**, **Kibana**, and **Glue Jupyter Notebooks** for seamless data ingestion, querying, and analytics.
+
+---
+
+## **Latest Update**
+- **Removed Zookeeper** and transitioned to **KRaft Mode** for Kafka to simplify the setup and improve performance.
+- **Removed Hive Metastore** to streamline the architecture and reduce dependencies.
 
 ---
 
 ## **Services Overview**
 
-### 1. **Zookeeper**
-- **Description:** Coordination service for Kafka.
-- **URL:** N/A
-- **Port:** `2181`
-
-### 2. **Kafka**
-- **Description:** Distributed streaming platform for building real-time data pipelines.
+### 1. **Kafka**
+- **Description:** Distributed streaming platform for building real-time data pipelines, now using **KRaft mode** (no Zookeeper required).
 - **Ports:** 
   - `9092` (Internal Broker)
   - `29092` (External Broker)
 
-### 3. **Kafka UI**
+### 2. **Kafka UI**
 - **Description:** Web interface for managing and monitoring Kafka clusters.
-- **URL:** [http://localhost:8082](http://localhost:8082)
-- **Port:** `8082`
+- **URL:** [http://localhost:8083](http://localhost:8083)
+- **Port:** `8083`
 
-### 4. **Elasticsearch**
+### 3. **Elasticsearch**
 - **Description:** Distributed search and analytics engine.
-- **URL:** [http://localhost:9200](http://localhost:9200)
+- **URL:** [http://localhost:9201](http://localhost:9201)
 - **Ports:** 
-  - `9200` (HTTP API)
-  - `9300` (Transport Layer)
+  - `9201` (HTTP API)
+  - `9301` (Transport Layer)
 
-### 5. **Kibana**
+### 4. **Kibana**
 - **Description:** Visualization tool for Elasticsearch.
-- **URL:** [http://localhost:5601](http://localhost:5601)
-- **Port:** `5601`
+- **URL:** [http://localhost:5602](http://localhost:5602)
+- **Port:** `5602`
 
-### 6. **MinIO**
+### 5. **MinIO**
 - **Description:** High-performance object storage compatible with AWS S3.
 - **Console URL:** [http://localhost:9001](http://localhost:9001)
 - **Ports:** 
@@ -44,32 +49,15 @@ This repository sets up a complete **data lake and analytics environment** using
   - **Access Key:** `minioadmin`
   - **Secret Key:** `minioadmin`
 
-### 7. **PostgreSQL**
-- **Description:** Relational database used as Hive Metastore backend.
-- **Port:** `5432`
-
-### 8. **Hive Metastore**
-- **Description:** Centralized metadata repository for data lake tables.
-- **Port:** `9083`
-
-### 9. **Trino**
+### 6. **Trino**
 - **Description:** Distributed SQL query engine for big data.
 - **URL:** [http://localhost:8080](http://localhost:8080)
 - **Port:** `8080`
 
-### 10. **Spark with Iceberg**
-- **Description:** Unified analytics engine with Apache Iceberg support.
-- **Ports:** 
-  - `9999`, `9090`, `10000`, `10001`
-
-### 11. **Glue Jupyter Notebooks**
+### 7. **Glue Jupyter Notebooks**
 - **Description:** AWS Glue environment for running data transformation scripts.
 - **URL:** [http://localhost:8888](http://localhost:8888)
 - **Port:** `8888`
-
-### 12. **Iceberg REST Catalog**
-- **Description:** REST interface for managing Iceberg table metadata.
-- **Port:** `8181`
 
 ---
 
@@ -140,23 +128,8 @@ SHOW CATALOGS;
 
 ---
 
-#### **Spark Shell**
-
-**Access Spark Shell:**
-```bash
-docker exec -it spark-iceberg spark-shell
-```
-
----
-
-### **4. Accessing Web Interfaces**
-
-- **Kafka UI:** [http://localhost:8082](http://localhost:8082)
-- **Trino:** [http://localhost:8080](http://localhost:8080)
-- **MinIO Console:** [http://localhost:9001](http://localhost:9001)
-- **Elasticsearch:** [http://localhost:9200](http://localhost:9200)
-- **Kibana:** [http://localhost:5601](http://localhost:5601)
-- **Glue Jupyter Notebooks:** [http://localhost:8888](http://localhost:8888)
+#### **Access Glue Jupyter Notebooks**
+Visit [http://localhost:8888](http://localhost:8888) to use AWS Glue Jupyter Notebooks for data transformation.
 
 ---
 
@@ -164,8 +137,7 @@ docker exec -it spark-iceberg spark-shell
 
 - **MinIO Data:** `minio_data`
 - **Postgres Data:** `postgres_data`
-- **Spark Data:** `spark_data`
-- **Elasticsearch Data:** `elastic_data`
+- **Elastic Data:** `elastic_data`
 
 These volumes ensure your data persists even if containers are restarted.
 
@@ -176,11 +148,6 @@ These volumes ensure your data persists even if containers are restarted.
 ### **MinIO Credentials:**
 - **Access Key:** `minioadmin`
 - **Secret Key:** `minioadmin`
-
-### **Postgres Credentials:**
-- **Username:** `hive`
-- **Password:** `hive`
-- **Database:** `metastore`
 
 ### **AWS CLI Credentials (for MinIO):**
 - **Access Key:** `minioadmin`
@@ -210,3 +177,4 @@ This project is licensed under the MIT License.
 ---
 
 Enjoy building your data lake and analytics environment! 🚀
+
