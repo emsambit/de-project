@@ -1,5 +1,3 @@
-Here’s the updated README file with the requested changes:
-
 ---
 
 # Data Lake and Analytics Stack with Docker Compose
