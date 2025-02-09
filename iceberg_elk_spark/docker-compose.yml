@@ -1,0 +1,196 @@
+services:
+  glue:
+    container_name: glue_jupyter
+    command: /home/glue_user/jupyter/jupyter_start.sh && sudo chown -R 10000:10000 /home/glue_user/workspace/jupyter_workspace
+    environment:
+      - DISABLE_SSL=true
+      - AWS_PROFILE=glue4
+      - DATALAKE_FORMATS=hudi
+    image: amazon/aws-glue-libs:glue_libs_4.0.0_image_01-amd64
+    ports:
+      # Spark web UI
+      - '4040:4040' 
+      - '4041:4041'
+      # Spark History server
+      - '28080:18080'
+      - '28081:18081'
+      # Jupyter web server
+      - '8998:8998'
+      - '8888:8888'
+    restart: always
+    volumes:
+      - ./notebooks:/home/glue_user/workspace/jupyter_workspace/
+      
+  kafka:
+    image: bitnami/kafka:latest  # Kafka with KRaft support
+    container_name: kafka
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    networks:
+      - iceberg_net
+    environment:
+      KAFKA_ENABLE_KRAFT: "yes"
+      KAFKA_CFG_PROCESS_ROLES: broker,controller
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CFG_NODE_ID: 1
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: "1@localhost:9093"
+      KAFKA_CFG_LISTENERS: PLAINTEXT://kafka:9092,CONTROLLER://:9093,EXTERNAL://:29092
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,EXTERNAL://localhost:29092
+      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: "PLAINTEXT"
+      KAFKA_BROKER_ID: 1
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_CFG_NUM_PARTITIONS: 2
+      ALLOW_PLAINTEXT_LISTENER: "yes"
+    volumes:
+      - ./kafka_data:/var/lib/kafka/data
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    depends_on:
+      - kafka
+    ports:
+      - "8083:8080"  # Changed to avoid conflicts
+    networks:
+      - iceberg_net
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092    
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.5.1
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ports:
+      - "9201:9200"  # Changed to avoid conflicts
+      - "9301:9300"  # Changed to avoid conflicts
+    volumes:
+      - ./elastic_data:/usr/share/elasticsearch/data
+    networks:
+      - iceberg_net
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.5.1
+    container_name: kibana
+    depends_on:
+      - elasticsearch
+    ports:
+      - "5602:5601"  # Changed to avoid conflicts
+    networks:
+      - iceberg_net 
+  aws:
+    image: amazon/aws-cli
+    hostname: aws-cli
+    container_name: aws-cli
+    volumes:
+      - ./data:/home/data
+    command: |
+      -c "sleep 2 && \
+      aws --endpoint-url http://minio:9000 s3 mb s3://warehouse --region eu-west-1 ; \
+      aws --endpoint-url http://minio:9000 s3 cp /home/data s3://warehouse/raw --recursive"
+    entrypoint: ["/bin/bash"]
+    environment:
+      AWS_ACCESS_KEY_ID: "minioadmin"
+      AWS_SECRET_ACCESS_KEY: "minioadmin"
+      AWS_REGION: us-east-1
+    depends_on:
+      - minio
+    networks:
+      - iceberg_net  
+    
+  minio:
+    image: minio/minio:latest
+    hostname: minio
+    container_name: minio
+    environment:
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin
+      - AWS_REGION=us-east-1
+      - MINIO_DOMAIN=minio
+    networks:
+      iceberg_net:
+        aliases:
+          - warehouse.minio
+    ports:
+      - "9001:9001"  # Changed to avoid conflicts
+      - "9000:9000"
+    command: ["server", "/data", "--console-address", ":9001"]
+    volumes:
+      - ./minio_data:/data
+  mc:
+    depends_on:
+      - minio
+    image: minio/mc
+    container_name: mc
+    networks:
+      - iceberg_net
+    environment:
+      - AWS_ACCESS_KEY_ID=minioadmin
+      - AWS_SECRET_ACCESS_KEY=minioadmin
+      - AWS_REGION=us-east-1
+    entrypoint: >
+      /bin/sh -c "
+      until (/usr/bin/mc config host add minio http://minio:9000 minioadmin minioadmin) do echo '...waiting...' && sleep 1; done;
+      /usr/bin/mc rm -r --force minio/warehouse;
+      /usr/bin/mc mb minio/warehouse;
+      /usr/bin/mc policy set public minio/warehouse;
+      tail -f /dev/null"
+      
+  iceberg-rest:
+    image: tabulario/iceberg-rest:latest
+    container_name: iceberg-rest
+    ports:
+      - "8181:8181"
+    networks:
+      - iceberg_net
+    environment:
+      AWS_ACCESS_KEY_ID: "minioadmin"
+      AWS_SECRET_ACCESS_KEY: "minioadmin"
+      AWS_REGION: us-east-1
+      CATALOG_WAREHOUSE: s3://warehouse/
+      CATALOG_IO__IMPL: org.apache.iceberg.aws.s3.S3FileIO
+      CATALOG_S3_ENDPOINT: http://minio:9000
+      CATALOG_S3_PATH__STYLE__ACCESS: True
+
+  postgres:
+    image: postgres:13
+    container_name: postgres
+    restart: always
+    ports:
+      - "5432:5432"
+    networks:
+      - iceberg_net
+    environment:
+      POSTGRES_USER: hive
+      POSTGRES_PASSWORD: hive
+      POSTGRES_DB: metastore
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data
+  
+  trino:
+    image: trinodb/trino:latest
+    container_name: trino
+    networks:
+      - iceberg_net
+    depends_on:
+      - minio
+      #- hive-metastore
+      - iceberg-rest
+      #- mc
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./conf/trino/catalog/:/etc/trino/catalog/
+      - ./trino-config/catalog/iceberg.properties:/etc/trino/catalog/iceberg.properties:ro      
+
+networks:
+  iceberg_net:
+    name: iceberg_net
+    driver: bridge
