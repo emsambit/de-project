@@ -47,7 +47,9 @@ services:
       KAFKA_CFG_NUM_PARTITIONS: 2
       ALLOW_PLAINTEXT_LISTENER: "yes"
     volumes:
-      - ./kafka_data:/var/lib/kafka/data
+      - ./kafka/kafka_data:/var/lib/kafka/data            # Data directory for Kafka
+      - ./kafka/kafka_logs:/opt/kafka/logs                # Log directory for Kafka logs
+      - ./kafka/kafka_offsets:/var/lib/kafka/offsets      # Offset directory for Kafka offsets
 
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
